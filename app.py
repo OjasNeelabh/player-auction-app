@@ -1,6 +1,12 @@
 import streamlit as st
 from utils.load_data import load_players, load_wins
 from utils.auction_logic import place_bid, get_bids, get_highest_bid
+import database
+
+st.set_page_config(
+    page_title="Cricket Auction",
+    layout="wide"
+)
 
 def load_css():
     with open("assets/style.css") as f:
