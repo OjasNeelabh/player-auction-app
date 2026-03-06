@@ -1,0 +1,17 @@
+body {
+background:#0f172a;
+color:white;
+}
+
+.player-card{
+background:#1e293b;
+padding:20px;
+border-radius:12px;
+}
+
+.stat-box{
+background:#334155;
+padding:10px;
+border-radius:8px;
+text-align:center;
+}

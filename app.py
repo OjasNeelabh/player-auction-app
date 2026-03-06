@@ -1,55 +1,90 @@
 import streamlit as st
-import pandas as pd
-import sqlite3
+from utils.load_data import load_players, load_wins
+from utils.auction_logic import place_bid, get_bids, get_highest_bid
 
-conn = sqlite3.connect("auction.db", check_same_thread=False)
-c = conn.cursor()
+def load_css():
+    with open("assets/style.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-players = pd.read_csv("players.csv")
+load_css()
+st.set_page_config(page_title="Cricket Auction", layout="wide")
 
-st.title("🏆 Player Auction App")
+players = load_players()
+wins = load_wins()
+
+st.title("🏏 Cricket Player Auction")
 
 username = st.text_input("Enter your username")
 
-if username:
+player = st.selectbox("Select Player", players["player"])
 
-    st.subheader("Available Players")
+p = players[players["player"] == player].iloc[0]
 
-    player = st.selectbox("Select Player", players["player"])
+col1, col2 = st.columns([1,2])
+
+with col1:
+    st.image(p["image"], width=250)
+
+with col2:
+    st.subheader(player)
+    st.write("Team:", p["team"])
+    st.write("Role:", p["role"])
+    st.write("Age:", p["age"])
+    st.write("Base Price:", p["base_price"])
+
+tabs = st.tabs(["Stats","Achievements","Bidding"])
+
+# Stats Tab
+with tabs[0]:
+
+    c1,c2,c3,c4 = st.columns(4)
+
+    c1.metric("Matches",p["matches"])
+    c2.metric("Runs",p["runs"])
+    c3.metric("Wickets",p["wickets"])
+    c4.metric("Strike Rate",p["strike_rate"])
+
+    chart_data = {
+        "Runs": p["runs"],
+        "Wickets": p["wickets"]
+    }
+
+    st.bar_chart(chart_data)
+
+
+# Achievements Tab
+with tabs[1]:
+
+    w = wins[wins["player"] == player].iloc[0]
+
+    c1,c2,c3 = st.columns(3)
+
+    c1.metric("Championships", w["championships"])
+    c2.metric("Awards", w["awards"])
+    c3.metric("MVP", w["mvp"])
+
+
+# Bidding Tab
+with tabs[2]:
 
     bid = st.number_input("Enter your bid", min_value=0)
 
     if st.button("Place Bid"):
 
-        c.execute("INSERT INTO bids VALUES(?,?,?)", (player, username, bid))
-        conn.commit()
+        place_bid(player, username, bid)
 
-        st.success("Bid placed!")
+        st.success("Bid placed successfully!")
 
-    st.subheader("Current Bids")
+    bids = get_bids(player)
 
-    bids = pd.read_sql("SELECT * FROM bids", conn)
+    st.subheader("Bid History")
+
     st.dataframe(bids)
 
-    if st.button("Finish Auction for Player"):
+    highest = get_highest_bid(player)
 
-        result = pd.read_sql(
-            f"SELECT * FROM bids WHERE player='{player}' ORDER BY bid DESC LIMIT 1",
-            conn
+    if highest is not None:
+
+        st.success(
+            f"Highest Bid: {highest['user']} - {highest['bid']}"
         )
-
-        if len(result) > 0:
-
-            winner = result.iloc[0]["user"]
-            price = result.iloc[0]["bid"]
-
-            c.execute("INSERT INTO winners VALUES(?,?,?)",
-                      (player, winner, price))
-            conn.commit()
-
-            st.success(f"{winner} won {player} for {price} coins!")
-
-    st.subheader("Auction Winners")
-
-    winners = pd.read_sql("SELECT * FROM winners", conn)
-    st.dataframe(winners)
