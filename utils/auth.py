@@ -1,7 +1,6 @@
-import sqlite3
 import bcrypt
+from database import conn
 
-conn = sqlite3.connect("auction.db", check_same_thread=False)
 
 def create_user(username, password):
 
@@ -23,6 +22,7 @@ def login_user(username, password):
     ).fetchone()
 
     if user:
+
         if bcrypt.checkpw(password.encode(), user[0]):
             return True
 
